@@ -1,106 +1,37 @@
 package com.github.helpermethod.zipper;
 
-import java.io.*;
-import java.net.URI;
-import java.net.URL;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Iterator;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 
-public class Zipper implements Iterable<Zipper.ZipFileEntry>, AutoCloseable {
-    private final ZipInputStream zipInputStream;
+public class Zipper {
 
-    private Zipper(ZipInputStream zipInputStream) {
-        this.zipInputStream = zipInputStream;
+    private Zipper() {
     }
 
-    public static Zipper from(InputStream inputStream) {
-        return new Zipper(new ZipInputStream(inputStream));
+    public static Iterable<ZipEntryIterator.Entry> newZipEntryIterable(ZipInputStream zipInputStream) {
+        return () -> new ZipEntryIterator(zipInputStream);
     }
 
-    public static Zipper from(Path path) throws IOException {
-        return from(path.toUri());
+    public static Stream<ZipEntryIterator.Entry> newZipEntryStream(ZipInputStream zipInputStream) {
+        return StreamSupport.stream(newZipEntryIterable(zipInputStream).spliterator(), false);
     }
 
-    public static Zipper from(URL url) throws IOException {
-        return from(url.openStream());
-    }
+    public static Path createZipFile(Path path, Consumer<RootNode> block) throws IOException {
+        try (ZipOutputStream zipOutputStream = new ZipOutputStream(Files.newOutputStream(path))) {
+            ZipFileVisitor zipFileVisitor = new ZipFileVisitor(zipOutputStream);
 
-    public static Zipper from(URI uri) throws IOException {
-        return from(uri.toURL());
-    }
+            RootNode rootNode = new RootNode();
+            block.accept(rootNode);
 
-    public static Zipper from(File file) {
-        try {
-            return from(new ZipInputStream(new FileInputStream(file)));
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public Iterator<ZipFileEntry> iterator() {
-        try {
-            return new ZipStreamIterator(zipInputStream);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public Stream<ZipFileEntry> stream() {
-        return StreamSupport.stream(this.spliterator(), false);
-    }
-
-    @Override
-    public void close() throws Exception {
-        zipInputStream.close();
-    }
-
-    private static class ZipStreamIterator implements Iterator<ZipFileEntry> {
-        private final ZipInputStream zipInputStream;
-        private ZipEntry zipEntry;
-
-        private ZipStreamIterator(ZipInputStream zipInputStream) throws IOException {
-            this.zipInputStream = zipInputStream;
-            this.zipEntry = zipInputStream.getNextEntry();
+            zipFileVisitor.visit(rootNode);
         }
 
-        public boolean hasNext() {
-            return zipEntry != null;
-        }
-
-        public ZipFileEntry next() {
-            try {
-                zipEntry = zipInputStream.getNextEntry();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-
-            return new ZipFileEntry(zipEntry, new FilterInputStream(zipInputStream) {
-                @Override
-                public void close() {
-                }
-            });
-        }
-    }
-
-    public static class ZipFileEntry {
-        private final ZipEntry zipEntry;
-        private final InputStream inputStream;
-
-        private ZipFileEntry(ZipEntry zipEntry, InputStream inputStream) {
-            this.zipEntry = zipEntry;
-            this.inputStream = inputStream;
-        }
-
-        public ZipEntry entry() {
-            return zipEntry;
-        }
-
-        public InputStream inputStream() {
-            return inputStream;
-        }
+        return path;
     }
 }
