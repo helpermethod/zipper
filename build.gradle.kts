@@ -1,0 +1,20 @@
+plugins {
+    `java-library`
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+dependencies {
+    testImplementation("org.junit.jupiter:junit-jupiter:6.0.0")
+    testImplementation("org.assertj:assertj-core:3.27.3")
+    testImplementation("io.github.helpermethod:zip-forge:2.0.0")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+tasks.withType<Test>().configureEach {
+    useJUnitPlatform()
+}
