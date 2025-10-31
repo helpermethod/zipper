@@ -10,7 +10,7 @@ class ZipInputStreamIterator implements Iterator<ZipperEntry> {
     private final ZipInputStream zipInputStream;
     private ZipEntry zipEntry;
 
-    ZipInputStreamIterator(ZipInputStream zipInputStream) throws IOException {
+    ZipInputStreamIterator(ZipInputStream zipInputStream) {
         this.zipInputStream = zipInputStream;
     }
 

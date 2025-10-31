@@ -16,11 +16,7 @@ public class Zipper implements Iterable<ZipperEntry>, AutoCloseable {
 
     @Override
     public Iterator<ZipperEntry> iterator() {
-        try {
-            return new ZipInputStreamIterator(zipInputStream);
-        } catch (IOException e) {
-            throw new ZipperException(e);
-        }
+        return new ZipInputStreamIterator(zipInputStream);
     }
 
     public Stream<ZipperEntry> stream() {

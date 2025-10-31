@@ -1,5 +1,7 @@
 plugins {
     `java-library`
+    jacoco
+    id("com.diffplug.spotless") version "8.0.0"
 }
 
 java {
@@ -17,4 +19,10 @@ dependencies {
 
 tasks.withType<Test>().configureEach {
     useJUnitPlatform()
+}
+
+spotless {
+    java {
+        palantirJavaFormat()
+    }
 }
