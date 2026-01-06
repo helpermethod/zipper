@@ -20,29 +20,43 @@ import org.junit.jupiter.params.provider.FieldSource;
 
 @DisplayNameGeneration(ReplaceUnderscores.class)
 class ZipperTests {
-    static List<Arguments> parameters = List.of(arguments((NodeGroup) () -> {
-        file("a.txt", "a");
-        file("b.txt", "b");
-        directory("c", () -> {
-            file("d.txt", "d");
-        });
-    }));
+    static List<Arguments> entries = List.of(arguments(
+            (NodeGroup) () -> {
+                file("a.txt", "a");
+                file("b.txt", "b");
+                directory("c", () -> {
+                    file("d.txt", "d");
+                });
+            },
+            List.of("a.txt", "b.txt", "c/", "c/d.txt")));
 
-    @FieldSource("parameters")
+    static List<Arguments> contents = List.of(arguments(
+            (NodeGroup) () -> {
+                file("a.txt", "a");
+                file("b.txt", "b");
+                directory("c", () -> {
+                    file("d.txt", "d");
+                });
+            },
+            List.of("a".getBytes(UTF_8), "b".getBytes(UTF_8), "d".getBytes(UTF_8))));
+
+    @FieldSource("entries")
     @ParameterizedTest
-    void should_iterate_over_zip_entries(NodeGroup nodeGroup, @TempDir Path tempDir) throws IOException {
+    void should_iterate_over_zip_entries(NodeGroup nodeGroup, List<String> entries, @TempDir Path tempDir)
+            throws IOException {
         var zipFile = createZipFile(tempDir.resolve("test.zip"), nodeGroup);
 
         try (var zipper = new Zipper(Files.newInputStream(zipFile))) {
             var zipFilenames = zipper.stream().map(e -> e.entry().getName()).toList();
 
-            assertThat(List.of("a.txt", "b.txt", "c/", "c/d.txt")).isEqualTo(zipFilenames);
+            assertThat(entries).isEqualTo(zipFilenames);
         }
     }
 
-    @FieldSource("parameters")
+    @FieldSource("contents")
     @ParameterizedTest
-    void should_iterate_over_zip_contents(NodeGroup nodeGroup, @TempDir Path tempDir) throws IOException {
+    void should_iterate_over_zip_contents(NodeGroup nodeGroup, List<byte[]> contents, @TempDir Path tempDir)
+            throws IOException {
         var zipFile = createZipFile(tempDir.resolve("test.zip"), nodeGroup);
 
         try (var zipper = new Zipper(Files.newInputStream(zipFile))) {
@@ -57,8 +71,7 @@ class ZipperTests {
                     })
                     .toList();
 
-            assertThat(List.of("a".getBytes(UTF_8), "b".getBytes(UTF_8), "d".getBytes(UTF_8)))
-                    .containsExactlyElementsOf(zipContents);
+            assertThat(contents).containsExactlyElementsOf(zipContents);
         }
     }
 }
