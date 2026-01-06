@@ -1,6 +1,8 @@
 package io.github.helpermethod.zipper;
 
+import java.io.FilterInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.zip.ZipEntry;
@@ -36,5 +38,14 @@ class ZipInputStreamIterator implements Iterator<ZipperEntry> {
         zipEntry = null;
 
         return zipperEntry;
+    }
+
+    private static class UnclosableInputStream extends FilterInputStream {
+        protected UnclosableInputStream(InputStream in) {
+            super(in);
+        }
+
+        @Override
+        public void close() {}
     }
 }
